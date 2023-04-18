@@ -7,6 +7,7 @@ import threading
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
+import textwrap
 
 # Folder location of image assets used by this example.
 ASSETS_PATH = os.path.join(os.path.dirname(__file__), "Assets")
@@ -19,7 +20,8 @@ def render_key_image(deck, icon_filename, font_filename, label_text):
     # afterwards.
     #icon = Image.open(icon_filename)
     #image = PILHelper.create_scaled_image(deck, icon, margins=[0, 0, 20, 0])
-    W, H = (72,72)
+    max_width = W = 72
+    max_height = H = 72
     image = Image.new('RGB',(W,H), "black")
 
     # Load a custom TrueType font and use it to overlay the key index, draw key
@@ -27,9 +29,43 @@ def render_key_image(deck, icon_filename, font_filename, label_text):
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype(font_filename, 14)
     
-    w,h = font.getsize(label_text)
-    #draw.text((image.width / 2, image.height / 2), text=label_text, font=font, fill="white")
-    draw.text(((W-w)/2,(H-h)/2), label_text, font=font, fill="white")
+    lines = []
+    current_line = ""
+    linecounter = 0
+    for char in label_text:
+        
+        if linecounter < 5:
+            if font.getsize(current_line + char)[0] <= max_width:
+                current_line += char
+            else:
+                lines.append(current_line)
+                linecounter += 1
+                current_line = char
+                
+                
+    if linecounter < 5:
+        lines.append(current_line)
+    
+    text_height = len(lines) * font.getsize('hg')[1]
+    if text_height > max_height:
+        print("zu gross")
+    
+    y_text = (max_height - text_height) // 2
+    
+    for line in lines:
+        
+        line_width, line_height = font.getsize(line)
+        x_text = (max_width - line_width) // 2
+        draw.text((x_text, y_text), line, font=font, fill='white')
+        y_text += line_height    
+        
+    #margin = 0
+    #offset = 0
+    #for line in textwrap.wrap(label_text, width=10):
+    #    draw.text((margin,offset), line, font=font, fill="white")
+    #    offset += font.getsize(line)[1]
+        
+
     return PILHelper.to_native_format(deck, image)
 
 
