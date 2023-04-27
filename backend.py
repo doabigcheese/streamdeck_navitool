@@ -75,7 +75,7 @@ if settings["update_checker"] == True:
 
 with open('Database.json') as f:
     Database = json.load(f)
-    streamdeckminimal.update_key(7,"Loading")
+    streamdeckminimal.update_key(7,14,"Loading")
 
 
 Container_list = []
@@ -117,7 +117,7 @@ parser.add_argument("--long", type=float)
 
 args = parser.parse_args()
 
-# print(args)
+print(args)
 
 Mode = args.mode
 
@@ -896,8 +896,13 @@ while True:
                 }
                 print("New data :", json.dumps(new_data))
                 sys.stdout.flush()
-                streamdeckminimal.update_key(7,f"{round(Bearing, 1)}°")
-                streamdeckminimal.update_key(8,f"{round(New_Distance_to_POI_Total, 3)} km")
+                streamdeckminimal.update_key(3,14,Target['Name'])
+                streamdeckminimal.update_key(6,14,"NearestQT")
+                streamdeckminimal.update_key(7,14,"Kompass")
+                streamdeckminimal.update_key(8,14,"Entfernung")
+                streamdeckminimal.update_key(11,14,f"{Target_to_POIs_Distances_Sorted[0]['Name']}")        
+                streamdeckminimal.update_key(12,17,f"{round(Bearing, 0)}°")
+                streamdeckminimal.update_key(13,16,f"{round(New_Distance_to_POI_Total, 1)} km")
 
 
                 #------------------------------------------------------------Logs update------------------------------------------------------------

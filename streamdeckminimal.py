@@ -9,12 +9,15 @@ from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
 import textwrap
 
+global fontsize
+
 # Folder location of image assets used by this example.
 ASSETS_PATH = os.path.join(os.path.dirname(__file__), "Assets")
 
 # Generates a custom tile with run-time generated text and custom image via the
 # PIL module.
 def render_key_image(deck, icon_filename, font_filename, label_text):
+    global fontsize
     # Resize the source image asset to best-fit the dimensions of a single key,
     # leaving a margin at the bottom so that we can draw the key title
     # afterwards.
@@ -27,7 +30,7 @@ def render_key_image(deck, icon_filename, font_filename, label_text):
     # Load a custom TrueType font and use it to overlay the key index, draw key
     # label onto the image a few pixels from the bottom of the key.
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype(font_filename, 14)
+    font = ImageFont.truetype(font_filename, fontsize)
     
     lines = []
     current_line = ""
@@ -105,7 +108,9 @@ def update_key_image(deck, key, text):
 
 
 
-def update_key(key,text):
+def update_key(key,size, text):
+    global fontsize
+    fontsize = size
     streamdecks = DeviceManager().enumerate()
     print("Found {} Stream Deck(s).\n".format(len(streamdecks)))
     for index, deck in enumerate(streamdecks):
