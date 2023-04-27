@@ -1,4 +1,4 @@
-# streamdeck_navitool \
+# streamdeck_navitool addon
 Stream Deck Extension for valalols navitool for star citizen
 
 It will write the text to the buttons seen in the screenshot. \
