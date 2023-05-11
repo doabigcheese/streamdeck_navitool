@@ -9,7 +9,7 @@ Installation: \
 copy the files to your NaviTool installation from valalol's tool (https://github.com/Valalol/Star-Citizen-Navigation) 
 
 pip install -r requirements.txt \
-hideapi-win needs to get extracted and the dll copied to e.g. windows/system32 
+hideapi-win needs to get extracted and the dll and the other 2 files copied to e.g. windows/system32 
 
 Usage: \
 as in the screenshot, i have a subpage with 2 buttons, the satellite which triggers the hotkey f24 for me, \
