@@ -1,3 +1,10 @@
+# script can also be called e.g. with:
+# if in saved_pois.txt one entry looks like:
+# Hurston,-532.066,-13.595,-847.17,Sandcave_near_Oparei
+# then:
+# python backend.py planetary_nav --container Hurston --known true --target "Sandcave_near_Oparei"
+
+
 from math import sqrt, degrees, radians, cos, acos, sin, asin, tan ,atan2, copysign, pi
 import pyperclip
 import time
@@ -268,25 +275,33 @@ for container_name in Database["Containers"]:
         Planetary_POI_list[container_name].append(poi)
         
 
-with open('saved_pois.txt') as g:
-    custom = 1
-    
-    for line in g:
-        inhalt = line.split(",")
-        tmp_container=inhalt[0]
-        tmp_x=float(inhalt[1])
-        tmp_y=float(inhalt[3])
-        tmp_z=float(inhalt[3])
-        tmp_name="Custom_" + str(custom)
-        #{'Name': 'Security Post Prashad', 'Container': 'Daymar', 'X': -223.514, 'Y': 65.899, 'Z': 181.092, 'qw': 0.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0, 'QTMarker': 'TRUE'}
-        tmp_poi={'Name': tmp_name, 'Container': tmp_container, 'X': tmp_x, 'Y': tmp_y, 'Z': tmp_z, 'qw': 0.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0, 'QTMarker': 'FALSE'}
-        Database["Containers"][tmp_container]["POI"][tmp_name]=tmp_poi
-        Planetary_POI_list[tmp_container].append(tmp_name)
+try:
+    with open('saved_pois.txt') as g:
+        custom = 1
         
-        #with open("debug.txt", "a") as myfile:
-        #    myfile.write(str(Planetary_POI_list[tmp_container]))
-        custom = custom + 1    
-
+        for line in g:
+            inhalt = line.split(",")
+            tmp_container=inhalt[0]
+            tmp_x=float(inhalt[1])
+            tmp_y=float(inhalt[2])
+            tmp_z=float(inhalt[3])
+            try:
+                pre_name=inhalt[4]
+                mapping = dict.fromkeys(range(32)) #remove unwanted control characters
+                tmp_name = pre_name.translate(mapping)
+            except:
+                tmp_name = "Custom_" + str(custom)
+            
+            #{'Name': 'Security Post Prashad', 'Container': 'Daymar', 'X': -223.514, 'Y': 65.899, 'Z': 181.092, 'qw': 0.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0, 'QTMarker': 'TRUE'}
+            tmp_poi={'Name': tmp_name, 'Container': tmp_container, 'X': tmp_x, 'Y': tmp_y, 'Z': tmp_z, 'qw': 0.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0, 'QTMarker': 'FALSE'}
+            Database["Containers"][tmp_container]["POI"][tmp_name]=tmp_poi
+            Planetary_POI_list[tmp_container].append(tmp_name)
+            
+            #with open("debug.txt", "a") as myfile:
+            #    myfile.write(str(Planetary_POI_list[tmp_container]))
+            custom = custom + 1    
+except:
+    print("No saved_pois.txt found.")
 
 
 
@@ -313,7 +328,8 @@ parser.add_argument("--long", type=float)
 args = parser.parse_args()
 
 print(args)
-
+with open("debug.txt", "w") as myfile:
+    myfile.write(str(args))
 
 Mode = args.mode
 
