@@ -11,9 +11,20 @@ import sys
 import requests
 import webbrowser
 import argparse
-import streamdeckminimal
+from ahk import AHK
+
+import threading
+from PIL import Image, ImageDraw, ImageFont
+from StreamDeck.DeviceManager import DeviceManager
+from StreamDeck.ImageHelpers import PILHelper
+import textwrap
 
 os.system("")
+ahk = AHK()
+
+global fontsize, save_triggered
+
+save_triggered = False
 
 with open("settings.json", "r") as f:
     settings = json.load(f)
@@ -70,12 +81,176 @@ if settings["update_checker"] == True:
             root.mainloop()
 
 
+# Folder location of image assets used by this example.
+ASSETS_PATH = os.path.join(os.path.dirname(__file__), "Assets")
+
+# Generates a custom tile with run-time generated text and custom image via the
+# PIL module.
+def render_key_image(deck, icon_filename, font_filename, label_text):
+    global fontsize
+    print(label_text)
+    # Resize the source image asset to best-fit the dimensions of a single key,
+    # leaving a margin at the bottom so that we can draw the key title
+    # afterwards.
+    #icon = Image.open(icon_filename)
+    #image = PILHelper.create_scaled_image(deck, icon, margins=[0, 0, 20, 0])
+    max_width = W = 72
+    max_height = H = 72
+    image = Image.new('RGB',(W,H), "black")
+
+    # Load a custom TrueType font and use it to overlay the key index, draw key
+    # label onto the image a few pixels from the bottom of the key.
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype(font_filename, fontsize)
+    
+    lines = []
+    current_line = ""
+    linecounter = 0
+    for char in label_text:
+        
+        if linecounter < 5:
+            if font.getlength(current_line + char) <= max_width:
+                current_line += char
+            else:
+                lines.append(current_line)
+                linecounter += 1
+                current_line = char
+                
+                
+    if linecounter < 5:
+        lines.append(current_line)
+    
+    
+    text_height = len(lines) * (font.getbbox('hg')[3] - font.getbbox('hg')[1])
+    if text_height > max_height:
+        print("zu gross")
+    
+    y_text = (max_height - text_height) // 2
+    
+    for line in lines:
+        
+        line_width = font.getlength(line)
+        line_height = font.getbbox(line)[3] - font.getbbox(line)[1]
+        #print(line_height) #font.getsize(line)[1]
+        x_text = (max_width - line_width) // 2
+        draw.text((x_text, y_text), line, font=font, fill='white')
+        y_text += line_height    
+        
+    #margin = 0
+    #offset = 0
+    #for line in textwrap.wrap(label_text, width=10):
+    #    draw.text((margin,offset), line, font=font, fill="white")
+    #    offset += font.getsize(line)[1]
+        
+
+    return PILHelper.to_native_format(deck, image)
+
+
+# Returns styling information for a key based on its position and state.
+def get_key_style(deck, key, text):
+  
+    
+    name = "Ausgabe"
+    icon = "{}.png".format("Released")
+    font = "Arial.ttf"
+    label = text
+
+    return {
+        "name": name,
+        "icon": os.path.join(ASSETS_PATH, icon),
+        "font": os.path.join(ASSETS_PATH, font),
+        "label": label
+    }
+
+# Creates a new key image based on the key index, style and current key state
+# and updates the image on the StreamDeck.
+def update_key_image(deck, key, text):
+    # Determine what icon and label to use on the generated key.
+    key_style = get_key_style(deck, key, text)
+
+    # Generate the custom key with the requested image and label.
+    image = render_key_image(deck, key_style["icon"], key_style["font"], key_style["label"])
+
+    # Use a scoped-with on the deck to ensure we're the only thread using it
+    # right now.
+    with deck:
+        # Update requested key with the generated image.
+        deck.set_key_image(key, image)
+
+
+# Prints key state change information, updates rhe key image and performs any
+# associated actions when a key is pressed.
+def key_change_callback(deck, key, state):
+    # Print new key state
+    
+    print("Deck {} Key {} = {}".format(deck.id(), key, state), flush=True)
+
+    
+
+    # Check if the key is changing to the pressed state.
+    if state:
+        if key == 5:
+           print("save pressed")
+           
+           save_pressed()
+
+def register_save_key(key,size,text):
+    global fontsize
+    
+    fontsize = size
+    streamdecks = DeviceManager().enumerate()
+    print("Found {} Stream Deck(s).\n".format(len(streamdecks)))
+    for index, deck in enumerate(streamdecks):
+        # This example only works with devices that have screens.
+        if not deck.is_visual():
+            continue
+
+        deck.open()
+         
+        print("Opened '{}' device (serial number: '{}', fw: '{}')".format(
+            deck.deck_type(), deck.get_serial_number(), deck.get_firmware_version()
+        ))
+        update_key_image(deck, key, text)
+        # Register callback function for when a key state changes.
+        deck.set_key_callback(key_change_callback)
+
+def update_key(key,size, text):
+    global fontsize
+    fontsize = size
+    streamdecks = DeviceManager().enumerate()
+    print("Found {} Stream Deck(s).\n".format(len(streamdecks)))
+    for index, deck in enumerate(streamdecks):
+        # This example only works with devices that have screens.
+        if not deck.is_visual():
+            continue
+
+        deck.open()
+        
+
+        print("Opened '{}' device (serial number: '{}', fw: '{}')".format(
+            deck.deck_type(), deck.get_serial_number(), deck.get_firmware_version()
+        ))
+        # Set initial key images.
+        update_key_image(deck, key, text)
+        
+
+        # Register callback function for when a key state changes.
+        #deck.set_key_callback(key_change_callback)
+
+        # Wait until all application threads have terminated (for this example,
+        # this is when all deck handles are closed).
+        #for t in threading.enumerate():
+        #    try:
+        #        t.join()
+        #    except RuntimeError:
+        #        pass
 
 
 
 with open('Database.json') as f:
     Database = json.load(f)
-    streamdeckminimal.update_key(7,14,"Loading")
+    update_key(7,14,"Loading")
+    register_save_key(5,14,"Save")
 
 
 Container_list = []
@@ -91,6 +266,26 @@ for container_name in Database["Containers"]:
     Planetary_POI_list[container_name] = []
     for poi in Database["Containers"][container_name]["POI"]:
         Planetary_POI_list[container_name].append(poi)
+        
+
+with open('saved_pois.txt') as g:
+    custom = 1
+    
+    for line in g:
+        inhalt = line.split(",")
+        tmp_container=inhalt[0]
+        tmp_x=float(inhalt[1])
+        tmp_y=float(inhalt[3])
+        tmp_z=float(inhalt[3])
+        tmp_name="Custom_" + str(custom)
+        #{'Name': 'Security Post Prashad', 'Container': 'Daymar', 'X': -223.514, 'Y': 65.899, 'Z': 181.092, 'qw': 0.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0, 'QTMarker': 'TRUE'}
+        tmp_poi={'Name': tmp_name, 'Container': tmp_container, 'X': tmp_x, 'Y': tmp_y, 'Z': tmp_z, 'qw': 0.0, 'qx': 0.0, 'qy': 0.0, 'qz': 0.0, 'QTMarker': 'FALSE'}
+        Database["Containers"][tmp_container]["POI"][tmp_name]=tmp_poi
+        Planetary_POI_list[tmp_container].append(tmp_name)
+        
+        #with open("debug.txt", "a") as myfile:
+        #    myfile.write(str(Planetary_POI_list[tmp_container]))
+        custom = custom + 1    
 
 
 
@@ -119,6 +314,7 @@ args = parser.parse_args()
 
 print(args)
 
+
 Mode = args.mode
 
 if Mode == "planetary_nav":
@@ -127,6 +323,7 @@ if Mode == "planetary_nav":
     if arg_known == "true":
         arg_target = args.target
         Target = Database["Containers"][arg_container]["POI"][arg_target]
+        #print(Database["Containers"][arg_container]["POI"][arg_target])
     
     else : 
         arg_entry_type = args.entry_type
@@ -206,9 +403,20 @@ except:
     time_offset = 0
 
 print('Time_offset:', time_offset)
+update_key(8,14,str(time_offset))
 sys.stdout.flush()
 
-
+def save_pressed():
+    global save_triggered
+    print("Backend, save pressed")
+    save_triggered = True
+    #update location
+    ahk.send_input('{Enter}')
+    time.sleep(0.5)
+    ahk.send_input("/showlocation")
+    time.sleep(0.1)
+    ahk.send_input('{Enter}')
+    
 
 def vector_norm(a):
     """Returns the norm of a vector"""
@@ -896,13 +1104,33 @@ while True:
                 }
                 print("New data :", json.dumps(new_data))
                 sys.stdout.flush()
-                streamdeckminimal.update_key(3,14,Target['Name'])
-                streamdeckminimal.update_key(6,14,"NearestQT")
-                streamdeckminimal.update_key(7,14,"Kompass")
-                streamdeckminimal.update_key(8,14,"Entfernung")
-                streamdeckminimal.update_key(11,14,f"{Target_to_POIs_Distances_Sorted[0]['Name']}")        
-                streamdeckminimal.update_key(12,17,f"{round(Bearing, 0)}°")
-                streamdeckminimal.update_key(13,16,f"{round(New_Distance_to_POI_Total, 1)} km")
+                update_key(3,14,Target['Name'])
+                update_key(4,14,f"{target_state_of_the_day}")
+                #update_key(14,14,f"{str(datetime.timedelta(seconds=round(Estimated_time_of_arrival, 0)))}")
+                update_key(6,14,"NearestQT")
+                update_key(7,14,"Kompass")
+                update_key(8,14,"Entfernung")
+                update_key(9,14,f"{target_next_event} um {time.strftime('%H:%M:%S', time.localtime(New_time + target_next_event_time*60))}")
+                update_key(11,14,f"{Target_to_POIs_Distances_Sorted[0]['Name']}")        
+                update_key(12,17,f"{round(Bearing, 0)}°")
+                update_key(13,16,f"{round(New_Distance_to_POI_Total, 1)} km")
+
+                if save_triggered == True:
+                    save_triggered = False
+                    print("saveLocation:")
+                    print(Actual_Container['Name'])       
+                    print("player_x " , round(New_player_local_rotated_coordinates['X'], 3))
+                    print("player_y " , round(New_player_local_rotated_coordinates['Y'], 3))
+                    print("player_z " , round(New_player_local_rotated_coordinates['Z'], 3))
+                    poi_name=Actual_Container['Name']
+                    #save_dic = {Actual_Container['Name']:{"Name":poi_name,"Container":Actual_Container['Name'],"X":round(New_player_local_rotated_coordinates['X'], 3),"Y":round(New_player_local_rotated_coordinates['Y'], 3),"Z":round(New_player_local_rotated_coordinates['Z'], 3),"QTMarker": "FALSE"}}
+                    save_data = Actual_Container['Name'] + "," + str(round(New_player_local_rotated_coordinates['X'], 3)) + "," + str(round(New_player_local_rotated_coordinates['Y'], 3)) + "," + str(round(New_player_local_rotated_coordinates['Z'], 3))
+                    with open("saved_pois.txt", "a") as myfile:
+                            myfile.write(save_data)
+                            myfile.write("\n")
+                            print(save_data)
+
+                    
 
 
                 #------------------------------------------------------------Logs update------------------------------------------------------------
