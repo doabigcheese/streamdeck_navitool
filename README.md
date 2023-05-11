@@ -11,4 +11,10 @@ copy the files to your NaviTool installation from valalol's tool (https://github
 pip install -r requirements.txt \
 hideapi-win needs to get extracted and the dll copied to e.g. windows/system32 
 
+Usage: \
+as in the screenshot, i have a subpage with 2 buttons, the satellite which triggers the hotkey f24 for me, \
+which is hooked up to a autohotkey script triggering the /showlocation command \
+and the Navitool button which launches the exe of the tool itselve... \
+Rest of buttons will get filled with information when the tool starts the planetary navigation.
+
 ![alt text](https://github.com/doabigcheese/streamdeck_navitool/blob/main/streamdeck.jpg?raw=true)
