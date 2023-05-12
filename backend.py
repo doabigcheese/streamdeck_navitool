@@ -3,6 +3,9 @@
 # Hurston,-532.066,-13.595,-847.17,Sandcave_near_Oparei
 # then:
 # python backend.py planetary_nav --container Hurston --known true --target "Sandcave_near_Oparei"
+# or
+# python backend.py planetary_nav --container Daymar --known true --target "Kudre Ore"
+# example coordinates:  Coordinates: x:12851373547.659204 y:-483029.219384 z:494397.0551
 
 
 from math import sqrt, degrees, radians, cos, acos, sin, asin, tan ,atan2, copysign, pi
@@ -21,7 +24,7 @@ import argparse
 from ahk import AHK
 
 import threading
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont 
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
 import textwrap
@@ -101,9 +104,10 @@ def render_key_image(deck, icon_filename, font_filename, label_text):
     # afterwards.
     #icon = Image.open(icon_filename)
     #image = PILHelper.create_scaled_image(deck, icon, margins=[0, 0, 20, 0])
-    max_width = W = 72
-    max_height = H = 72
-    image = Image.new('RGB',(W,H), "black")
+    max_width = W = 72 #96 on xl
+    max_height = H = 72 #96 on xl
+    image_black = Image.new('RGB',(W,H), "black")
+    image = PILHelper.create_scaled_image(deck, image_black, margins=[0, 0, 0, 0])
 
     # Load a custom TrueType font and use it to overlay the key index, draw key
     # label onto the image a few pixels from the bottom of the key.
