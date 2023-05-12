@@ -15,6 +15,7 @@ Usage: \
 as in the screenshot, i have a subpage with 2 buttons, the satellite which triggers the hotkey f24 for me, \
 which is hooked up to a autohotkey script triggering the /showlocation command \
 and the Navitool button which launches the exe of the tool itselve... \
-Rest of buttons will get filled with information when the tool starts the planetary navigation.
+Rest of buttons will get filled with information when the tool starts the planetary navigation. \
+The included Database.json is a unofficial version with Sandcaves and Rivers included.
 
 ![alt text](https://github.com/doabigcheese/streamdeck_navitool/blob/main/streamdeck.jpg?raw=true)
